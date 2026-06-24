@@ -18,13 +18,18 @@ jobs:
           ICON=""
           [ -f icon.icns ] && ICON="--icon icon.icns"
           pyinstaller --noconfirm --windowed --name PhotoSorter --hidden-import tkinter.scrolledtext $ICON PhotoSorter.py
-          # .app is a directory bundle; upload-artifact strips the wrapper unless we zip it first
-          ditto -c -k --keepParent dist/PhotoSorter.app dist/PhotoSorter-mac.zip
+          # Ad-hoc sign (avoids "damaged" on Apple Silicon; still shows unverified until notarized)
+          codesign --force --deep --sign - dist/PhotoSorter.app
+          cp packaging/Open\ PhotoSorter.command packaging/FIRST\ TIME\ ON\ MAC.txt dist/
+          chmod +x dist/Open\ PhotoSorter.command
+          # tar preserves symlinks; zip does not and breaks PyInstaller 6+ .app bundles
+          COPYFILE_DISABLE=1 tar -czf dist/PhotoSorter-mac.tar.gz -C dist \
+            PhotoSorter.app "Open PhotoSorter.command" "FIRST TIME ON MAC.txt"
         shell: bash
       - uses: actions/upload-artifact@v4
         with:
           name: PhotoSorter-mac
-          path: dist/PhotoSorter-mac.zip
+          path: dist/PhotoSorter-mac.tar.gz
 
   build-windows:
     runs-on: windows-latest

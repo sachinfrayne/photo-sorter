@@ -53,6 +53,9 @@ pyinstaller --noconfirm --windowed \
 deactivate
 rm -rf .venv build PhotoSorter.spec
 
+cp packaging/Open\ PhotoSorter.command packaging/FIRST\ TIME\ ON\ MAC.txt dist/
+chmod +x dist/Open\ PhotoSorter.command
+
 echo ""
 echo "Done: dist/PhotoSorter.app"
-echo "Put PhotoSorter.app in your photos folder and double-click it."
+echo "Use dist/Open PhotoSorter.command to launch (see packaging/FIRST TIME ON MAC.txt)."

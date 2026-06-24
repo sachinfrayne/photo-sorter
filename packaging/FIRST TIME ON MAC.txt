@@ -1,0 +1,19 @@
+PhotoSorter — first time on Mac
+================================
+
+After you download and extract the files, put them in your photos folder.
+You should see:
+
+  • Open PhotoSorter.command   ← use this to start the app
+  • PhotoSorter.app
+
+FIRST TIME ONLY (macOS blocks apps from the internet):
+
+  1. Right-click "Open PhotoSorter.command"
+  2. Choose "Open"
+  3. Click "Open" in the dialog
+
+Every time after that, just double-click "Open PhotoSorter.command".
+
+If macOS still blocks it, open System Settings → Privacy & Security
+and click "Open Anyway" (shown after a blocked launch attempt).
