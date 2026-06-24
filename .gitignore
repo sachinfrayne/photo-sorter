@@ -5,3 +5,4 @@ build/
 *.spec
 .venv/
 icon.png
+.DS_Store
