@@ -1,0 +1,42 @@
+name: Build
+
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+
+jobs:
+  build-mac:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install pyinstaller
+      - run: |
+          ICON=""
+          [ -f icon.icns ] && ICON="--icon icon.icns"
+          pyinstaller --noconfirm --windowed --name PhotoSorter --hidden-import tkinter.scrolledtext $ICON PhotoSorter.py
+        shell: bash
+      - uses: actions/upload-artifact@v4
+        with:
+          name: PhotoSorter-mac
+          path: dist/PhotoSorter.app
+
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install pyinstaller
+      - run: |
+          $icon = if (Test-Path "icon.ico") { "--icon icon.ico" } else { "" }
+          pyinstaller --noconfirm --onefile --windowed --name PhotoSorter --hidden-import tkinter.scrolledtext $icon PhotoSorter.py
+        shell: pwsh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: PhotoSorter-windows
+          path: dist/PhotoSorter.exe
