@@ -18,11 +18,13 @@ jobs:
           ICON=""
           [ -f icon.icns ] && ICON="--icon icon.icns"
           pyinstaller --noconfirm --windowed --name PhotoSorter --hidden-import tkinter.scrolledtext $ICON PhotoSorter.py
+          # .app is a directory bundle; upload-artifact strips the wrapper unless we zip it first
+          ditto -c -k --keepParent dist/PhotoSorter.app dist/PhotoSorter-mac.zip
         shell: bash
       - uses: actions/upload-artifact@v4
         with:
           name: PhotoSorter-mac
-          path: dist/PhotoSorter.app
+          path: dist/PhotoSorter-mac.zip
 
   build-windows:
     runs-on: windows-latest
