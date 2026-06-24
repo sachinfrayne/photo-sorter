@@ -9,8 +9,8 @@ jobs:
   build-mac:
     runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
       - run: pip install pyinstaller
@@ -18,24 +18,22 @@ jobs:
           ICON=""
           [ -f icon.icns ] && ICON="--icon icon.icns"
           pyinstaller --noconfirm --windowed --name PhotoSorter --hidden-import tkinter.scrolledtext $ICON PhotoSorter.py
-          # Ad-hoc sign (avoids "damaged" on Apple Silicon; still shows unverified until notarized)
           codesign --force --deep --sign - dist/PhotoSorter.app
-          cp packaging/Open\ PhotoSorter.command packaging/FIRST\ TIME\ ON\ MAC.txt dist/
-          chmod +x dist/Open\ PhotoSorter.command
-          # tar preserves symlinks; zip does not and breaks PyInstaller 6+ .app bundles
-          COPYFILE_DISABLE=1 tar -czf dist/PhotoSorter-mac.tar.gz -C dist \
-            PhotoSorter.app "Open PhotoSorter.command" "FIRST TIME ON MAC.txt"
+          mkdir -p dist/dmg-staging
+          cp -R dist/PhotoSorter.app dist/dmg-staging/
+          cp packaging/FIRST\ TIME\ ON\ MAC.txt dist/dmg-staging/
+          hdiutil create -volname PhotoSorter -srcfolder dist/dmg-staging -ov -format UDZO dist/PhotoSorter.dmg
         shell: bash
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         with:
           name: PhotoSorter-mac
-          path: dist/PhotoSorter-mac.tar.gz
+          path: dist/PhotoSorter.dmg
 
   build-windows:
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
       - run: pip install pyinstaller
@@ -43,7 +41,7 @@ jobs:
           $iconArgs = if (Test-Path "icon.ico") { @("--icon", "icon.ico") } else { @() }
           pyinstaller --noconfirm --onefile --windowed --name PhotoSorter --hidden-import tkinter.scrolledtext @iconArgs PhotoSorter.py
         shell: pwsh
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         with:
           name: PhotoSorter-windows
           path: dist/PhotoSorter.exe

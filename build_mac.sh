@@ -53,9 +53,10 @@ pyinstaller --noconfirm --windowed \
 deactivate
 rm -rf .venv build PhotoSorter.spec
 
-cp packaging/Open\ PhotoSorter.command packaging/FIRST\ TIME\ ON\ MAC.txt dist/
-chmod +x dist/Open\ PhotoSorter.command
+mkdir -p dist/dmg-staging
+cp -R dist/PhotoSorter.app dist/dmg-staging/
+cp packaging/FIRST\ TIME\ ON\ MAC.txt dist/dmg-staging/
+hdiutil create -volname PhotoSorter -srcfolder dist/dmg-staging -ov -format UDZO dist/PhotoSorter.dmg
 
 echo ""
-echo "Done: dist/PhotoSorter.app"
-echo "Use dist/Open PhotoSorter.command to launch (see packaging/FIRST TIME ON MAC.txt)."
+echo "Done: dist/PhotoSorter.dmg (open the DMG, drag PhotoSorter.app to your photos folder)"
