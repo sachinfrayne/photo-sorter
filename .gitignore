@@ -1,8 +1,4 @@
-__pycache__/
-*.pyc
+.build/
 dist/
-build/
-*.spec
-.venv/
 icon.png
 .DS_Store

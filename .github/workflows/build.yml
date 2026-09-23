@@ -10,38 +10,8 @@ jobs:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v5
-      - uses: actions/setup-python@v6
-        with:
-          python-version: '3.12'
-      - run: pip install pyinstaller
-      - run: |
-          ICON=""
-          [ -f icon.icns ] && ICON="--icon icon.icns"
-          pyinstaller --noconfirm --windowed --name PhotoSorter --hidden-import tkinter.scrolledtext $ICON PhotoSorter.py
-          codesign --force --deep --sign - dist/PhotoSorter.app
-          mkdir -p dist/dmg-staging
-          cp -R dist/PhotoSorter.app dist/dmg-staging/
-          cp packaging/FIRST\ TIME\ ON\ MAC.txt dist/dmg-staging/
-          hdiutil create -volname PhotoSorter -srcfolder dist/dmg-staging -ov -format UDZO dist/PhotoSorter.dmg
-        shell: bash
+      - run: ./build_mac.sh
       - uses: actions/upload-artifact@v6
         with:
           name: PhotoSorter-mac
           path: dist/PhotoSorter.dmg
-
-  build-windows:
-    runs-on: windows-latest
-    steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-python@v6
-        with:
-          python-version: '3.12'
-      - run: pip install pyinstaller
-      - run: |
-          $iconArgs = if (Test-Path "icon.ico") { @("--icon", "icon.ico") } else { @() }
-          pyinstaller --noconfirm --onefile --windowed --name PhotoSorter --hidden-import tkinter.scrolledtext @iconArgs PhotoSorter.py
-        shell: pwsh
-      - uses: actions/upload-artifact@v6
-        with:
-          name: PhotoSorter-windows
-          path: dist/PhotoSorter.exe

@@ -1,77 +1,101 @@
 # PhotoSorter
 
-Sorts a folder of photos and videos into subfolders organised by country and year/month, using GPS coordinates embedded in the files.
+A native Mac app. Point it at a folder of photos and videos and it sorts
+everything into subfolders by **year → month → location**, using the GPS
+and date metadata embedded in each file, and renames each file to
+`yyyy-MM-dd-XXXXXXX.ext` so it stays unique even if you later dump every
+photo into one flat folder — no more `IMG_0001.jpg` collisions between
+different cameras and phones.
 
 ```
 Photos/
   2024/
-    Italy - January/
-    Italy - March/
-    Spain - July/
-  2025/
-    United Kingdom - December/
-  Unsorted/          ← no date metadata
+    01 - January/
+      Italy/
+        2024-01-15-8QS5KTY.jpg
+      Unknown Location/          ← has a date, but no GPS data
+        2024-01-18-2N7RM4C.jpg
+    03 - March/
+      Japan/
+        2024-03-02-QG8VGFW.mov
+  Unknown Date/                  ← no usable date or GPS at all (rare)
+    IMG_9999.jpg                 ← left as-is; nothing to build a name from
 ```
 
-Supports JPEG, HEIC, PNG, TIFF, RAW (CR2/CR3/NEF/ARW/DNG), MP4, MOV, MKV and more. Sidecar files (`.aae`, `.xmp`) are moved alongside their paired photo.
+The 7-character suffix is random, drawn from an alphabet that skips
+look-alike characters (`0/O`, `1/I/L`) — with ~34 billion combinations per
+day, a collision is effectively impossible. On the rare occasion two files
+do land on the exact same name, the usual `_1`, `_2` suffix kicks in.
+
+Supports JPEG, HEIC, PNG, TIFF, RAW (CR2/CR3/NEF/ARW/DNG/RW2/ORF/RAF), MP4,
+MOV, M4V, AVI and MKV. Sidecar files (`.aae`, `.xmp`, `.thm`) are renamed
+and travel with their paired photo. Running it again on an already-sorted
+folder is safe — files that are already renamed and in the right place are
+left alone.
+
+Built as a native SwiftUI app using Apple's own frameworks: `ImageIO` for
+EXIF/GPS on photos, `AVFoundation` for video metadata, and `CoreLocation`
+for turning GPS coordinates into a country name. No Python runtime, no
+bundled `exiftool`, nothing to download separately.
 
 ---
 
 ## Using the app
 
-1. Download `PhotoSorter.dmg` (Mac) or `PhotoSorter-windows.zip` from the [Actions tab](../../actions) (open the latest successful run, scroll to **Artifacts**)
-2. **Mac:** open the DMG, drag `PhotoSorter.app` into your photos folder
-3. **Windows:** unzip and put `PhotoSorter.exe` in your photos folder
+1. Download `PhotoSorter.dmg` from the [Actions tab](../../actions) (open
+   the latest successful run, scroll to **Artifacts**), or build it
+   yourself (see below).
+2. Open the DMG and drag `PhotoSorter.app` into your photos folder (or
+   anywhere you like — it just needs to be pointed at the folder).
+3. Double-click it, confirm the folder shown (or click **Browse…**, or
+   drag a folder onto the window), then click **Sort Photos**.
 
-### Mac — first launch only
+### First launch only
 
-macOS blocks downloaded apps until you allow them once. The DMG includes `FIRST TIME ON MAC.txt` with full steps. Short version:
+macOS blocks apps downloaded from the internet until you allow them once —
+this is Apple's Gatekeeper, not a bug in the app. `PhotoSorter.dmg` includes
+`FIRST TIME ON MAC.txt` with the steps. Short version:
 
-1. Double-click `PhotoSorter.app` once (macOS will block it)
-2. Open **System Settings → Privacy & Security** → click **Open Anyway**
+1. Double-click `PhotoSorter.app` once (macOS will block it — expected)
+2. Open **System Settings → Privacy & Security**, scroll down, click
+   **Open Anyway** next to the PhotoSorter message, then confirm
 
-If that button doesn’t appear, use the drag-to-Terminal trick in `FIRST TIME ON MAC.txt` (or run this from the folder containing the app):
+If that doesn't appear, the always-works fallback is Terminal:
 
 ```bash
-xattr -dr com.apple.quarantine PhotoSorter.app
+xattr -dr com.apple.quarantine /path/to/PhotoSorter.app
 ```
 
-After that one-time step, double-click `PhotoSorter.app` normally.
+(Easiest way to get the path right: type `xattr -dr com.apple.quarantine `
+with a trailing space, then drag the `.app` from Finder into the Terminal
+window before pressing Return.)
 
-> Right-click → Open often does **not** work on recent macOS for unsigned downloads. An Apple Developer account (~$99/year) is required to sign and notarize the app so it opens with no extra steps.
+After that one-time step, double-click `PhotoSorter.app` normally, forever.
 
-### Windows
-
-Double-click `PhotoSorter.exe`, confirm the folder shown, and click **Sort Photos**.
-
-**GPS support:** GPS sorting requires `exiftool.exe`. Download it from [exiftool.org](https://exiftool.org) and place it in the same folder as `PhotoSorter.exe`. Without it, photos are sorted by date only with no country folders.
+> Without a paid Apple Developer account there's no way to skip this
+> Gatekeeper step entirely — that requires notarization ($99/year). The app
+> *is* signed (ad-hoc), which avoids the separate "app is damaged" error
+> that unsigned Apple Silicon builds can hit; this step is just the normal
+> one-time "I trust this app" confirmation.
 
 ---
 
 ## Building
 
-Both scripts create an isolated virtual environment, build, and clean up after themselves.
+Requires the Xcode Command Line Tools (`xcode-select --install`) — full
+Xcode isn't needed.
 
-**Mac** → `dist/PhotoSorter.app`
 ```bash
 ./build_mac.sh
 ```
 
-**Windows** → `dist\PhotoSorter.exe`
-```
-build_windows.bat
-```
+Produces `dist/PhotoSorter.app` and `dist/PhotoSorter.dmg`.
 
-Requires Python 3.9+ from [python.org](https://python.org).
-
-Alternatively, push to GitHub — the Actions workflow builds both platforms automatically and uploads them as downloadable artifacts.
-
----
+Alternatively, push to GitHub — the Actions workflow builds it
+automatically and uploads the DMG as a downloadable artifact.
 
 ## Running from source
 
 ```bash
-python3 PhotoSorter.py
+swift run
 ```
-
-Requires Python 3.9+ with tkinter. On macOS this is included with Xcode Command Line Tools (`xcode-select --install`). On Windows, install Python from python.org (tkinter is included by default).

@@ -1,62 +1,58 @@
 #!/bin/bash
-# Builds PhotoSorter.app — run this once on a Mac.
-# Output: dist/PhotoSorter.app  (double-clickable macOS app)
-# Drop icon.png (1024x1024) in this folder to give the app a custom icon.
+# Builds PhotoSorter.app — run this on a Mac (needs the Xcode Command Line
+# Tools: `xcode-select --install` if `swift build` isn't found).
+# Output: dist/PhotoSorter.app and dist/PhotoSorter.dmg
 set -e
 cd "$(dirname "$0")"
 
-# Homebrew Python ships without tkinter — install python-tk if needed
-if ! python3 -c "import tkinter" &>/dev/null 2>&1; then
-  PY_VER=$(python3 -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')")
-  echo "Installing tkinter for Python $PY_VER..."
-  brew install "python-tk@$PY_VER"
-fi
+APP_NAME="PhotoSorter"
+BUNDLE_ID="com.sachinfrayne.photosorter"
+VERSION="1.0.0"
+BUILD_DIR="dist"
+APP_BUNDLE="$BUILD_DIR/$APP_NAME.app"
 
-echo "Creating build environment..."
-python3 -m venv .venv
-source .venv/bin/activate
+echo "Building $APP_NAME (release)..."
+swift build -c release
 
-echo "Installing PyInstaller..."
-pip install --quiet pyinstaller
+echo "Assembling app bundle..."
+rm -rf "$APP_BUNDLE"
+mkdir -p "$APP_BUNDLE/Contents/MacOS" "$APP_BUNDLE/Contents/Resources"
+cp ".build/release/$APP_NAME" "$APP_BUNDLE/Contents/MacOS/$APP_NAME"
+cp icon.icns "$APP_BUNDLE/Contents/Resources/AppIcon.icns"
 
-# Convert icon.png → icon.icns (macOS) and icon.ico (Windows) if present
-ICON_FLAG=""
-if [[ -f "icon.png" ]]; then
-  echo "Generating icons from icon.png..."
-  pip install --quiet pillow
+cat > "$APP_BUNDLE/Contents/Info.plist" <<PLIST
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CFBundleName</key><string>$APP_NAME</string>
+    <key>CFBundleDisplayName</key><string>$APP_NAME</string>
+    <key>CFBundleIdentifier</key><string>$BUNDLE_ID</string>
+    <key>CFBundleVersion</key><string>$VERSION</string>
+    <key>CFBundleShortVersionString</key><string>$VERSION</string>
+    <key>CFBundleExecutable</key><string>$APP_NAME</string>
+    <key>CFBundleIconFile</key><string>AppIcon</string>
+    <key>CFBundlePackageType</key><string>APPL</string>
+    <key>LSMinimumSystemVersion</key><string>14.0</string>
+    <key>NSHighResolutionCapable</key><true/>
+    <key>LSApplicationCategoryType</key><string>public.app-category.photography</string>
+    <key>NSPrincipalClass</key><string>NSApplication</string>
+</dict>
+</plist>
+PLIST
 
-  # macOS .icns via sips + iconutil (built-in macOS tools)
-  mkdir -p icon.iconset
-  for size in 16 32 128 256 512; do
-    sips -z $size $size icon.png --out "icon.iconset/icon_${size}x${size}.png"       &>/dev/null
-    sips -z $((size*2)) $((size*2)) icon.png --out "icon.iconset/icon_${size}x${size}@2x.png" &>/dev/null
-  done
-  iconutil -c icns icon.iconset && rm -rf icon.iconset
-  ICON_FLAG="--icon icon.icns"
+echo "Signing (ad-hoc — no paid Apple Developer account needed)..."
+codesign --force --deep --sign - "$APP_BUNDLE"
 
-  # Windows .ico via Pillow (committed to repo so CI can use it too)
-  python3 -c "
-from PIL import Image
-img = Image.open('icon.png').convert('RGBA')
-img.save('icon.ico', format='ICO', sizes=[(256,256),(128,128),(64,64),(48,48),(32,32),(16,16)])
-"
-  echo "Also wrote icon.ico for the Windows build — commit both icon files."
-fi
-
-echo "Building PhotoSorter.app..."
-pyinstaller --noconfirm --windowed \
-    --name PhotoSorter \
-    --hidden-import tkinter.scrolledtext \
-    $ICON_FLAG \
-    PhotoSorter.py
-
-deactivate
-rm -rf .venv build PhotoSorter.spec
-
-mkdir -p dist/dmg-staging
-cp -R dist/PhotoSorter.app dist/dmg-staging/
-cp packaging/FIRST\ TIME\ ON\ MAC.txt dist/dmg-staging/
-hdiutil create -volname PhotoSorter -srcfolder dist/dmg-staging -ov -format UDZO dist/PhotoSorter.dmg
+echo "Creating DMG..."
+rm -rf "$BUILD_DIR/dmg-staging"
+mkdir -p "$BUILD_DIR/dmg-staging"
+cp -R "$APP_BUNDLE" "$BUILD_DIR/dmg-staging/"
+cp "packaging/FIRST TIME ON MAC.txt" "$BUILD_DIR/dmg-staging/"
+ln -s /Applications "$BUILD_DIR/dmg-staging/Applications"
+hdiutil create -volname "$APP_NAME" -srcfolder "$BUILD_DIR/dmg-staging" -ov -format UDZO "$BUILD_DIR/$APP_NAME.dmg"
+rm -rf "$BUILD_DIR/dmg-staging"
 
 echo ""
-echo "Done: dist/PhotoSorter.dmg (open the DMG, drag PhotoSorter.app to your photos folder)"
+echo "Done: $BUILD_DIR/$APP_NAME.dmg"
+echo "($BUILD_DIR/$APP_NAME.app also built directly, if you just want to drag that into a photos folder yourself.)"
